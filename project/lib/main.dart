@@ -7,13 +7,16 @@ import 'package:project/screens/profile_screen/profile_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
-  int length = await ApiService.fetchGitHubUserRepositoryLength(
-      "https://api.github.com/users/jishnulal-crypto/repos");
+  // int length = await ApiService.fetchGitHubUserRepositoryLength(
+  //     "https://api.github.com/users/jishnulal-crypto/repos");
   // print(length);
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: ((context) {
         return UserProvider();
+      })),
+      ChangeNotifierProvider(create: ((context) {
+        return RepoProvider();
       }))
     ],
     child: MyApp(),
@@ -31,7 +34,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: HomeScreen());
+        home: LoginPage());
   }
 }
 

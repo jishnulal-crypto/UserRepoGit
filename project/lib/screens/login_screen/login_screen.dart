@@ -77,7 +77,10 @@ class _LoginPageState extends State<LoginPage> {
                       final password = _passwordController.text;
                       print('Email: $email');
                       print('Password: $password');
-                      await ApiService.handleLogin(email, password, context);
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: ((context) => HomeScreen())));
+
+                      // await  ApiService.handleLogin(email, password, context);
                     }
                   },
                   child: Text('Login'),

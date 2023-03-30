@@ -9,7 +9,7 @@ import 'package:project/models/user.dart';
 import 'package:project/screens/home_screen/home_screen.dart';
 
 class ApiService {
-  static String token = "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";
+  static String token = "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";
   static int fetchContentLength = 50;
   static String? email;
   static String? password;
@@ -19,10 +19,10 @@ class ApiService {
     ApiService.password = password;
   }
 
-  static Future<List<User>> fetchGitHubUserData() async {
+  static Future<Map<String, dynamic>> fetchGitHubUserData() async {
     List<User> allusers = [];
     List<User> limitedUser = [];
-
+    int statusCode = 200;
     try {
       final response = await http.get(
         Uri.parse('https://api.github.com/users'),
@@ -30,21 +30,24 @@ class ApiService {
           'Authorization': 'Bearer${token}',
         },
       );
+
+      if (response.statusCode != 200) {
+        statusCode = response.statusCode;
+      }
+
       if (response.statusCode == 200) {
         List result = json.decode(response.body);
         allusers = result.map((e) => User.fromJson(e)).toList();
         limitedUser = allusers.getRange(0, 10).toList();
-        print(result);
+        // print(result);
       }
     } catch (e) {
       log(e.toString());
     }
-    return limitedUser;
+    return {'statusCode': statusCode, 'users': allusers};
   }
 
   static Future<int> fetchGitHubUserRepositoryLength(String repoURl) async {
-    // print(repoURl);
-    print("here");
     int repoLength = 0;
     try {
       final response = await http.get(
@@ -53,16 +56,11 @@ class ApiService {
           'Authorization': 'Bearer${token}',
         },
       );
-      print(response.statusCode);
       if (response.statusCode == 200) {
         List result = json.decode(response.body);
         List<Repo> allrepos = result.map((e) => Repo.fromJson(e)).toList();
-        repoLength = allrepos.length;
       }
-    } catch (e) {
-      log(e.toString());
-    }
-
+    } catch (e) {}
     return repoLength;
   }
 
@@ -78,7 +76,7 @@ class ApiService {
       print(response.statusCode);
       if (response.statusCode == 200) {
         List result = json.decode(response.body);
-        List<Repo> allrepos = result.map((e) => Repo.fromJson(e)).toList();
+        allrepos = result.map((e) => Repo.fromJson(e)).toList();
       }
     } catch (e) {
       log(e.toString());
@@ -91,12 +89,13 @@ class ApiService {
       String Uemail, String Upassword, BuildContext context) async {
     final headers = {
       'Authorization': 'token $token',
-      'Accept': 'application/vnd.github.v3+json'
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'request'
     };
     try {
       final response = await http.get(
           Uri.parse(
-            'https://api.github.com/users?username=jishnulal-crypto&password=Jjjishnuno1',
+            'https://api.github.com/users?email=$Uemail&password=$Upassword',
           ),
           // headers: {
           //   'Authorization':

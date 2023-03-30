@@ -4,6 +4,15 @@ import 'package:flutter/src/widgets/framework.dart';
 import 'package:project/api_service/api_service.dart';
 import 'package:project/models/repo.dart';
 
+class RepoWidget extends StatelessWidget {
+  const RepoWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("S");
+  }
+}
+
 class RepoSearchWidget extends StatefulWidget {
   const RepoSearchWidget({required this.repoUrl, super.key});
 
@@ -23,10 +32,6 @@ class _RepoSearchWidgetState extends State<RepoSearchWidget> {
   @override
   void initState() {
     getRepositories(widget.repoUrl);
-    searchController.addListener(() {
-      checkLength();
-    });
-
     super.initState();
   }
 
@@ -40,77 +45,59 @@ class _RepoSearchWidgetState extends State<RepoSearchWidget> {
     setState(() {});
   }
 
-  void filterUsers(String query) {
-    filterdRepos =
-        repos.where((element) => element.name!.contains(query)).toList();
-    setState(() {});
-  }
-
-  void checkLength() {
-    if (searchController.text.isEmpty) {
-      length = repos.length;
-    } else {
-      length = repos.length;
-    }
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 80,
-          backgroundColor: Colors.white,
-          title: Container(
-            width: 400,
-            height: 50,
-            decoration: BoxDecoration(
-                color: Colors.lightGreen[200],
-                borderRadius: BorderRadius.circular(10)),
-            child: TextField(
-              controller: searchController,
-              onChanged: ((value) {
-                filterUsers(value);
-              }),
-              decoration: InputDecoration(
-                  hintText: "search repos",
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none),
-            ),
+    return Scaffold(
+      backgroundColor: Colors.amber,
+      appBar: AppBar(
+        toolbarHeight: 80,
+        backgroundColor: Colors.white,
+        title: Container(
+          width: 400,
+          height: 50,
+          decoration: BoxDecoration(
+              color: Colors.lightGreen[200],
+              borderRadius: BorderRadius.circular(10)),
+          child: TextField(
+            controller: searchController,
+            onChanged: ((value) {}),
+            decoration: InputDecoration(
+                hintText: "search repos",
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none),
           ),
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(
-                height: 20,
-              ),
-              if (loading) ...[
-                CircularProgressIndicator()
-              ] else ...[
-                NotificationListener(
-                  onNotification: (notification) {
-                    print(scrollController.offset);
-                    return true;
-                  },
-                  child: ListView.builder(
-                      controller: scrollController,
-                      physics: ScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: length,
-                      itemBuilder: ((context, index) {
-                        Repo rep = searchController.text.isEmpty
-                            ? repos[index]
-                            : filterdRepos[index];
-                        return GithubRepoItem(
-                          repo: rep,
-                        );
-                      })),
-                )
-              ]
-            ],
-          ),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(
+              height: 20,
+            ),
+            if (loading) ...[
+              CircularProgressIndicator()
+            ] else ...[
+              NotificationListener(
+                onNotification: (notification) {
+                  print(scrollController.offset);
+                  return true;
+                },
+                child: ListView.builder(
+                    controller: scrollController,
+                    physics: ScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: 10,
+                    itemBuilder: ((context, index) {
+                      Repo rep = searchController.text.isEmpty
+                          ? repos[index]
+                          : filterdRepos[index];
+                      return GithubRepoItem(
+                        repo: rep,
+                      );
+                    })),
+              )
+            ]
+          ],
         ),
       ),
     );

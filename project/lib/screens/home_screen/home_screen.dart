@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -18,23 +19,26 @@ class _HomeScreenState extends State<HomeScreen> {
   TextEditingController searchController = TextEditingController();
   ScrollController scrollController = ScrollController();
   List<User> users = [];
+  int statusCode = 0;
+  Map<String, dynamic> data = {};
   List<User> filterdUsers = [];
   int length = 0;
   bool loading = false;
+  User? user;
 
   @override
   void initState() {
     getUsers();
-    searchController.addListener(() {
-      checkLength();
-    });
-
+    filterUsers();
+    calls();
     super.initState();
   }
 
   void getUsers() async {
     loading = true;
-    users = await ApiService.fetchGitHubUserData();
+    data = await ApiService.fetchGitHubUserData();
+    users = data['users'];
+    statusCode = data['statusCode'];
     if (users.isNotEmpty) {
       loading = false;
       length = users.length;
@@ -42,20 +46,38 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  void filterUsers(String query) {
-    filterdUsers =
-        users.where((element) => element.name!.contains(query)).toList();
-    setState(() {});
+  void calls() {
+    searchController.addListener(() {
+      setState(() {});
+    });
   }
 
-  void checkLength() {
-    if (searchController.text.isEmpty) {
-      length = users.length;
-    } else {
-      length = filterdUsers.length;
-    }
-    setState(() {});
+  void filterUsers({String? query}) {
+    setState(() {
+      searchController.addListener(() {
+        filterdUsers = users
+            .where((element) => element.login!.contains(searchController.text))
+            .toList();
+      });
+    });
   }
+
+  int checkLength() {
+    setState(() {
+      if (searchController.text.isEmpty) {
+        length = users.length;
+      } else {
+        length = filterdUsers.length;
+      }
+    });
+    return length;
+  }
+
+  // User getUserforOutput(int index) {
+  //   return searchController.text.isEmpty
+  //       ? user = users[index]
+  //       : user = filterdUsers[index];
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +95,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(10)),
             child: TextField(
               controller: searchController,
-              onChanged: ((value) {
-                filterUsers(value);
-              }),
+              // onChanged: ((value) {
+              //   // filterUsers(value);
+              // }),
               decoration: InputDecoration(
                   hintText: "search for users",
                   enabledBorder: InputBorder.none,
@@ -90,27 +112,53 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 20,
               ),
               if (loading) ...[
-                CircularProgressIndicator()
+                Align(
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        Text("${statusCode.toString()} Api limit exceded")
+                      ],
+                    ))
               ] else ...[
-                NotificationListener(
-                  onNotification: (notification) {
-                    print(scrollController.offset);
-                    return true;
-                  },
-                  child: ListView.builder(
-                      controller: scrollController,
-                      physics: ScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: length,
-                      itemBuilder: ((context, index) {
-                        User user = searchController.text.isEmpty
-                            ? users[index]
-                            : filterdUsers[index];
-                        return GithubUserItem(
-                          user: user,
-                        );
-                      })),
-                )
+                searchController.text.isNotEmpty
+                    ? NotificationListener(
+                        onNotification: (notification) {
+                          print(scrollController.offset);
+                          return true;
+                        },
+                        child: ListView.builder(
+                            controller: scrollController,
+                            physics: ScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: filterdUsers.length,
+                            itemBuilder: ((context, index) {
+                              User user = filterdUsers[index];
+                              return GithubUserItem(
+                                user: user,
+                              );
+                            })),
+                      )
+                    : NotificationListener(
+                        onNotification: (notification) {
+                          print(scrollController.offset);
+                          return true;
+                        },
+                        child: ListView.builder(
+                            controller: scrollController,
+                            physics: ScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: users.length,
+                            itemBuilder: ((context, index) {
+                              User user = users[index];
+                              return GithubUserItem(
+                                user: user,
+                              );
+                            })),
+                      )
               ]
             ],
           ),
@@ -122,16 +170,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class UserProvider extends ChangeNotifier {
   int repoLength = 0;
-  void getRepoLength(String repoUrl) async {
+  // StreamController streamController = StreamController();
+
+  Stream<int> getRepoLength(String repoUrl) async* {
     repoLength = await ApiService.fetchGitHubUserRepositoryLength(repoUrl);
+    yield repoLength;
     notifyListeners();
+  }
+
+  Stream<int> productsStream(String url) async* {
+    while (true) {
+      // await Future.delayed(Duration(milliseconds: 500));
+      int someProduct = await ApiService.fetchGitHubUserRepositoryLength(url);
+      notifyListeners();
+      yield someProduct;
+    }
   }
 }
 
 class GithubUserItem extends StatelessWidget {
-  const GithubUserItem({required this.user, super.key});
+  GithubUserItem({required this.user, super.key});
 
   final User user;
+  int length = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -157,11 +218,14 @@ class GithubUserItem extends StatelessWidget {
                   child: Image.network(user.avatarUrl.toString()),
                 ),
               ),
-              title: Text(user.name.toString()),
+              title: Text(user.login.toString()),
               trailing:
                   Consumer<UserProvider>(builder: ((context, value, child) {
-                value.getRepoLength(user.reposUrl.toString());
-                return Text(value.repoLength.toString());
+                return StreamBuilder(
+                    stream: value.productsStream(user.reposUrl.toString()),
+                    builder: ((context, snapshot) {
+                      return Text(snapshot.data.toString());
+                    }));
               }))),
         ));
   }
